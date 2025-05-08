@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Audio WebSocket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e4e4e4;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: scroll;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gemini Audio WebSocket Test</h1>
+    <button onclick="startAudioSession()">Start Audio Session</button>
+    <div id="output"></div>
+    
+    <script>
+        let socket;
+
+        function logOutput(message) {
+            const outputDiv = document.getElementById("output");
+            outputDiv.innerHTML += `<p>${message}</p>`;
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        function startAudioSession() {
+            socket = new WebSocket("ws://localhost:8000/ws/audio");
+            
+            socket.onopen = () => {
+                logOutput("🎧 Connected to WebSocket server");
+            };
+            
+            socket.onmessage = (event) => {
+                const data = event.data;
+                if (data instanceof Blob) {
+                    // Jika data audio diterima
+                    const audioUrl = URL.createObjectURL(data);
+                    const audioElement = new Audio(audioUrl);
+                    audioElement.play();
+                } else {
+                    // Jika data teks diterima
+                    logOutput(`Server: ${data}`);
+                }
+            };
+            
+            socket.onerror = (error) => {
+                logOutput(`❌ WebSocket Error: ${error}`);
+            };
+            
+            socket.onclose = () => {
+                logOutput("❌ Disconnected from WebSocket");
+            };
+        }
+
+        // Mengirim audio (dummy audio) ke server sebagai contoh
+        function sendAudio() {
+            const audioFile = document.getElementById("audioFile").files[0];
+            if (audioFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    socket.send(arrayBuffer);  // Kirim data audio ke server
+                    logOutput("🎤 Audio file sent");
+                };
+                reader.readAsArrayBuffer(audioFile);
+            }
+        }
+    </script>
+
+</body>
+</html>
